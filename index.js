@@ -12,7 +12,7 @@ const uploadRoutes = require("./routes/uploads");
 
 const app = express();
 app.use(cors({
-    origin : process.env.FRONTEND_URL,
+    origin : ['https://lastarajewellers.com', 'https://lastara-jewellery.vercel.app', 'https://www.lastarajewellers.com'],
     credentials : true
 }))
 app.use(express.json({ limit: "10mb" }));
