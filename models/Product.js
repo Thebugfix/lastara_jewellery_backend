@@ -12,6 +12,7 @@ const productSchema = new mongoose.Schema({
   description: { type: String },
   purity: { type: String },
   weight: { type: Number },
+  stoneWeight: { type: Number },
   pricePerGram: { type: Number },
   images: [imageSchema],
   category: { type: String },

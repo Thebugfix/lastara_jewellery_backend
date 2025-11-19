@@ -35,4 +35,29 @@ router.get("/active", async (req, res) => {
   res.json(video || null);
 });
 
+// Delete hero video
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    const video = await HeroVideo.findById(req.params.id);
+    if (!video) {
+      return res.status(404).json({ message: "Video not found" });
+    }
+    
+    // Delete video from Cloudinary
+    if (video.public_id) {
+      await cloudinary.uploader.destroy(video.public_id, {
+        resource_type: "video",
+      });
+    }
+    
+    // Delete from database
+    await HeroVideo.findByIdAndDelete(req.params.id);
+    
+    res.json({ message: "Video deleted successfully" });
+  } catch (error) {
+    console.error("Delete video error:", error);
+    res.status(500).json({ message: "Failed to delete video" });
+  }
+});
+
 module.exports = router;

@@ -76,7 +76,7 @@ router.delete("/:id", auth, async (req, res) => {
       return res.status(404).json({ message: "Subscriber not found" });
     }
 
-    await subscriber.remove();
+    await Newsletter.findByIdAndDelete(req.params.id);
     res.json({ message: "Subscriber deleted" });
   } catch (err) {
     console.error(err);

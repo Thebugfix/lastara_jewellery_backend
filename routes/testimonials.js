@@ -20,7 +20,7 @@ router.delete("/:id", auth, async (req, res) => {
   const t = await Testimonial.findById(req.params.id);
   if (!t) return res.status(404).json({ message: "Not found" });
   if (t.image?.public_id) await cloudinary.uploader.destroy(t.image.public_id);
-  await t.remove();
+  await Testimonial.findByIdAndDelete(req.params.id);
   res.json({ message: "Deleted" });
 });
 

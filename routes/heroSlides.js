@@ -36,7 +36,7 @@ router.delete("/:id", auth, async (req, res) => {
   const slide = await HeroSlide.findById(req.params.id);
   if (!slide) return res.status(404).json({ message: "Not found" });
   if (slide.image?.public_id) await cloudinary.uploader.destroy(slide.image.public_id);
-  await slide.remove();
+  await HeroSlide.findByIdAndDelete(req.params.id);
   res.json({ message: "Deleted" });
 });
 
