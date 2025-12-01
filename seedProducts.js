@@ -38,7 +38,15 @@ const sampleProducts = [
     description: 'Like scattered stars, they twinkle, twirl and glide. Glowing fireflies, guiding the night with glowing pride. Wear this studded necklace inspired by the night sky and let your elegance shine through.',
     purity: '18K',
     weight: 33.174,
+    stoneWeight: 2.5,
+    stonePrice: 1500,
     pricePerGram: 6200,
+    makingCharges: {
+      percentage: 15,
+      isDiscount: false,
+      discountPercentage: 0
+    },
+    taxRate: 3,
     category: 'Necklaces',
     material: 'Diamond',
     occasion: 'Special Events',
@@ -60,7 +68,15 @@ const sampleProducts = [
     description: 'Exquisite traditional gold necklace featuring intricate craftsmanship. Perfect for weddings and special occasions. This timeless piece showcases the rich heritage of Indian jewelry making.',
     purity: '22K',
     weight: 45.5,
+    stoneWeight: 0,
+    stonePrice: 0,
     pricePerGram: 6000,
+    makingCharges: {
+      percentage: 20,
+      isDiscount: true,
+      discountPercentage: 5
+    },
+    taxRate: 3,
     category: 'Necklaces',
     material: 'Gold',
     occasion: 'Festive',
@@ -81,7 +97,15 @@ const sampleProducts = [
     description: 'Elegant pearl necklace with lustrous pearls strung together in perfect harmony. Ideal for both traditional and modern attire. A symbol of timeless elegance and sophistication.',
     purity: '22K',
     weight: 28.3,
+    stoneWeight: 5.2,
+    stonePrice: 1200,
     pricePerGram: 5800,
+    makingCharges: {
+      percentage: 18,
+      isDiscount: false,
+      discountPercentage: 0
+    },
+    taxRate: 3,
     category: 'Necklaces',
     material: 'Pearl',
     occasion: 'Daily Wear',
@@ -98,7 +122,15 @@ const sampleProducts = [
     description: 'Divine temple jewelry inspired necklace featuring goddess motifs and intricate temple architecture designs. Crafted with devotion and traditional artistry.',
     purity: '22K',
     weight: 52.8,
+    stoneWeight: 8.5,
+    stonePrice: 1800,
     pricePerGram: 6100,
+    makingCharges: {
+      percentage: 25,
+      isDiscount: true,
+      discountPercentage: 10
+    },
+    taxRate: 3,
     category: 'Necklaces',
     material: 'Gold',
     occasion: 'Festive',
@@ -690,22 +722,38 @@ async function seedProducts() {
 
     // Clear existing products
     await Product.deleteMany({});
-    console.log('🗑️  Cleared existing products');
+    console.log('Cleared existing products');
 
-    // Add slugs to sample products
-    const productsWithSlugs = sampleProducts.map(product => ({
-      ...product,
-      slug: generateSlug(product.title, product.sku)
-    }));
+    // Add slugs and calculate totalPrice for each product
+    const productsWithSlugs = sampleProducts.map(product => {
+      const productWithSlug = {
+        ...product,
+        slug: generateSlug(product.title, product.sku),
+        // Set default values if not provided
+        stoneWeight: product.stoneWeight || 0,
+        stonePrice: product.stonePrice || 0,
+        makingCharges: product.makingCharges || {
+          percentage: 20,
+          isDiscount: false,
+          discountPercentage: 0
+        },
+        taxRate: product.taxRate || 3
+      };
+      
+      // Calculate totalPrice
+      productWithSlug.totalPrice = calculateTotalPrice(productWithSlug);
+      
+      return productWithSlug;
+    });
 
-    // Insert sample products with slugs
-    const products = await Product.insertMany(productsWithSlugs);
-    console.log(`✨ Successfully seeded ${products.length} products!`);
+    // Insert sample products
+    const createdProducts = await Product.insertMany(productsWithSlugs);
+    console.log(`✨ Successfully seeded ${createdProducts.length} products!`);
 
     // Show summary
     console.log('\n📊 Products Summary:');
     const categories = {};
-    products.forEach(p => {
+    createdProducts.forEach(p => {
       categories[p.category] = (categories[p.category] || 0) + 1;
     });
     
@@ -714,7 +762,7 @@ async function seedProducts() {
     });
 
     console.log('\n💰 Price Range:');
-    const prices = products.map(p => p.pricePerGram * p.weight);
+    const prices = createdProducts.map(p => p.pricePerGram * p.weight);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     console.log(`   Min: ₹${minPrice.toLocaleString('en-IN')}`);
@@ -728,6 +776,41 @@ async function seedProducts() {
     console.error('❌ Error seeding products:', error);
     process.exit(1);
   }
+}
+
+// Function to calculate totalPrice based on the model's pre-save hook logic
+function calculateTotalPrice(product) {
+  const gross = product.weight || 0;
+  const stoneW = product.stoneWeight || 0;
+  const rate = product.pricePerGram || 0;
+  const stonePrice = product.stonePrice || 0;
+  const mc = product.makingCharges || { percentage: 20, isDiscount: false, discountPercentage: 0 };
+  const taxRate = product.taxRate || 0;
+
+  // NET WEIGHT
+  const netWeight = gross - stoneW;
+
+  // METAL PRICE
+  const metalPrice = netWeight * rate;
+
+  // MAKING BASE
+  const makingBase = metalPrice * (mc.percentage )/ 100;
+
+  // DISCOUNT
+  const discountAmt = mc.isDiscount
+    ? (makingBase * mc.discountPercentage) / 100
+    : 0;
+
+  const finalMaking = makingBase - discountAmt;
+
+  // SUBTOTAL
+  const subtotal = metalPrice + stonePrice + finalMaking;
+
+  // TAX
+  const taxAmount = subtotal * (taxRate / 100);
+
+  // FINAL TOTAL
+  return Math.round(subtotal + taxAmount);
 }
 
 // Run the seed function

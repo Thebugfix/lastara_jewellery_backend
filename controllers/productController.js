@@ -3,8 +3,8 @@ const cloudinary = require("../utils/cloudinary");
 
 exports.createProduct = async (req, res) => {
   try {
-    const { title, description, purity, weight, category, occasion, material, weddingType, images } = req.body;
-    const product = new Product({ title, description, purity, weight, images, category, occasion, material, weddingType });
+    const { title, description, purity, weight, stoneWeight, pricePerGram, stonePrice, category, occasion, material, weddingType, images } = req.body;
+    const product = new Product({ title, description, purity, weight, stoneWeight, pricePerGram, stonePrice, images, category, occasion, material, weddingType });
     await product.save();
     res.status(201).json(product);
   } catch (err) {
@@ -92,17 +92,11 @@ exports.updateProduct = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
-
-    // Update the product
-    const updatedProduct = await Product.findByIdAndUpdate(
-      id,
-      { ...updates },
-      { new: true } // Return the updated document
-    );
-
-    res.json(updatedProduct);
+    Object.assign(product, updates);
+    await product.save();
+    res.json(product);
   } catch (err) {
-    console.error('Error updating product:', err);
+    console.error("Error updating product:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
